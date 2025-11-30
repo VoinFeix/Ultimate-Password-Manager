@@ -19,7 +19,7 @@ A lightweight and secure password manager built using **Python** and **Tkinter**
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/DevManoj96/Ultimate-Password-Manager.git
+git clone https://github.com/VoinFeix/Ultimate-Password-Manager.git
 cd Ultimate-Password-Manager
 ```
 
