@@ -4,6 +4,61 @@ from tkinter import messagebox
 import secrets
 import string
 import hashlib
+import os
+from cryptography.fernet import Fernet
+import cryptography
+
+FILENAME = ".saved_passwords.txt"
+
+KEYFILENAME = "key.key"
+key = None
+fernet = None
+def encryptionInit():
+    global key, fernet, KEYFILENAME
+    try:
+        path = '.passwd/config/file/key/'
+        try:
+            os.makedirs(path, exist_ok=True)
+        except Exception as err:
+            print(f"[OS Makedirs Error]: {str(err)}")
+
+        key = Fernet.generate_key()
+        folderPath = path + KEYFILENAME
+        fernet = Fernet(key)
+        filename = ''.join(folderPath)
+
+        with open(filename, 'wb') as f:
+            f.write(key)
+
+    except Exception as e:
+        print(f"[Encryption Init Error]: {str(e)}")
+
+encryptionInit()
+
+def encryptFile(filename):
+    global fernet
+    try:
+        with open(filename, 'rb') as f:
+            original = f.read()
+        encrypted = fernet.encrypt(original)
+
+        with open(filename, 'wb') as f:
+            f.write(encrypted)
+    except Exception as e:
+        print(f"[Encryption File Error]: {str(e)}")
+
+def decryptFile(filename):
+    global fernet
+    try:
+        with open(filename, 'rb') as f:
+            encrypted = f.read()
+
+        decrypted = fernet.decrypt(encrypted)
+
+        with open(filename, 'wb') as f:
+            f.write(decrypted)
+    except Exception as e:
+        print(f"[Decryption File Error]: {str(e)}")
 
 # Define light theme color scheme
 light_theme = {
@@ -133,9 +188,13 @@ def pass_gen_menu():
             # Save password if checkbox is checked
             if chkValue.get():
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                with open("saved_passwords.txt", "a") as f:
-                    f.write(f"[{timestamp}] Length: {length} | {password}\n")
+                try:
+                    with open(FILENAME, "a") as f:
+                        f.write(f"[{timestamp}] Length: {length} | {password}\n")
 
+                    encryptFile(FILENAME)
+                except Exception as e:
+                    print(f"[Save Password Error]: {str(e)}")
             pass_gen_popup.generated_password = password
             copy_button.config(state=tk.NORMAL)
         except ValueError:
@@ -179,8 +238,8 @@ def pass_gen_menu():
     done_button = tk.Button(pass_gen_popup, text="Done", command=pass_gen_popup.destroy, font=("Arial", 12), width=20, height=2)
     done_button.pack(pady=5)
 
-    label2 = tk.Label(pass_gen_popup, text="Note: The Passwords are saved in a plain text file !!", font=("Arial", 12))
-    label2.pack(pady=5)
+#   label2 = tk.Label(pass_gen_popup, text="Note: The Passwords are saved in a plain text file !!", font=("Arial", 12))
+#    label2.pack(pady=5)
 
     update_theme_button_text()
     apply_theme(pass_gen_popup, dark_theme if is_dark_theme else light_theme)
@@ -303,7 +362,8 @@ def saved_passwds_menu():
     Popup window to display saved passwords from file in a read-only text area.
     """
     try:
-        with open("saved_passwords.txt", "r") as f:
+        decryptFile(FILENAME)
+        with open(FILENAME, "r") as f:
             saved_passwords = f.read()
     except FileNotFoundError:
         messagebox.showwarning("Warning", "No Saved Passwords Found.")
@@ -311,7 +371,7 @@ def saved_passwds_menu():
 
     saved_passwds_popup = tk.Toplevel(root)
     saved_passwds_popup.title("--- Saved Passwords ---")
-    saved_passwds_popup.geometry('400x600')
+    saved_passwds_popup.geometry('600x600')
 
     text_area = tk.Text(saved_passwds_popup, wrap="word", bg="black", fg="white", font=("Courier", 12))
     text_area.pack(expand=True, fill="both", padx=10, pady=10)
